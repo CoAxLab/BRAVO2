@@ -1,11 +1,11 @@
-function [p true_cxy boot] = bootstrap_correlations(x,y,varargin);
+function [p true_cxy boot] = bagging_correlations(x,y,varargin);
 
-%function [p r sim] = bootstrap_correlations(X,Y,OPTS);
+%function [p r sim] = bagging_correlations(X,Y,OPTS);
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
-% BOOTSTRAP_CORRELATIONS:
-% Performs a bootstrapped mediation between two series of data
+% BAGGING_CORRELATIONS:
+% Performs a MCMC subsampling mediation between two series of data
 % to estimate the signficiance of mediator variable M on the relationship
 % between X & Y. Follows methods reported in Cerin et al. (2006) & Preacher
 % and Hayes (2008). 
@@ -14,9 +14,10 @@ function [p true_cxy boot] = bootstrap_correlations(x,y,varargin);
 %       x,y = Nx1 vectors to be correlated (both are permuted without
 %       replacement)
 %
-%     Optional Input:
+%    Optional Input:
 %       'niter' = number of permutations to run. Default = 1000;
 %       'flag'   = 'spearmans','pearsons' (default)
+%       'ratio'  = subsampling ratio (default = 67% of dataset)
 %
 % OUTPUT:
 %       p  =  probability that the bootstrapped distribution crosses zero
@@ -33,6 +34,8 @@ function [p true_cxy boot] = bootstrap_correlations(x,y,varargin);
 % Reset random number genrator as a precaution (changing to using Jason's approach)
 RandStream('mt19937ar','Seed',sum(100*clock));
 
+% Defaults
+ratio = 2/3;
 flag = 'pearsons';
 niter = 1000;
 
@@ -48,26 +51,12 @@ y = y(good_vals);
 
 n = length(x);
 
-% Get the initial correlation values of the unpermuted series
-switch flag  
- case 'spearmans'
-  ctype = 0;
-  true_cxy = spear(x(:),y(:));
-  
- case 'pearsons'
-  ctype = 1;
-  r = corrcoef(x(:),y(:));
-  true_cxy = r(1,2);
-  
- otherwise
-  error('Unknown Correlation type');
-end;
-
-% Run the bootstrap
+% Run the MCMC
 boot =  [];
 for it = 1:niter
   
-  indx = floor(rand(1,n)*(n-1))+1;
+  indx = randperm(n);
+  indx = indx(1:round(ratio*n));
 
   nx = x(indx);
   ny = y(indx);
@@ -83,6 +72,8 @@ for it = 1:niter
   
   boot = [boot cxy];
 end;
+
+true_cxy = mean(boot);
 
 % Calculate the probability of observing a stronger correlation by chance
 if mean(boot) > 0;

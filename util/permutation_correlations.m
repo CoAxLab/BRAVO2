@@ -1,6 +1,6 @@
-function [p true_cxy perm] = permutation_correlations(x,y,niters,flag);
+function [p true_cxy perm] = permutation_correlations(x,y,varargin);
 
-%function [p r perm] = permutation_correlations(x,y,niters,flag);
+%function [p r sim] = permutation_correlations(X,Y,OPTS)
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
@@ -14,9 +14,9 @@ function [p true_cxy perm] = permutation_correlations(x,y,niters,flag);
 %       x,y = Nx1 vectors to be correlated (both are permuted without
 %       replacement)
 %
-%       niters = number of permutations to run. Default = 1000;
-%
-%       flag   = 'spearmans','pearsons' (default)
+%     Optional Input:
+%       'niter' = number of permutations to run. Default = 1000;
+%       'flag'   = 'spearmans','pearsons' (default)
 %
 % OUTPUT:
 %       p  = probability of simulated correlations being GREATER than the
@@ -24,22 +24,25 @@ function [p true_cxy perm] = permutation_correlations(x,y,niters,flag);
 %
 %       r = true, unpermuted correlation value
 %
-%       perm = niter x 1 vector of simulated correlations
+%       sim = niter x 1 vector of simulated correlations
 %
 % Written by Timothy Verstynen (2005; updated for BRAVO 2011 and 2013)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
 
-% If no correlation type is given, default to the most conservative
-if nargin < 4
-  flag = 'pearsons';
-end;
+% Reset random number genrator as a precaution (changing to using Jason's approach)
+RandStream('mt19937ar','Seed',sum(100*clock));
 
-% Default to 1K iterations
-if nargin < 3 | isempty(niters)
-  niters = 1000;
-end;
+% Defaults
+flag = 'pearsons';
+niter = 1000;
+
+% Get variable input parameters
+for v=1:2:length(varargin),
+    eval(sprintf('%s = varargin{%d};',varargin{v},v+1));
+end
+
 
 % Get rid of NaNs
 good_vals = find(~isnan(x) & ~isnan(y));
@@ -64,7 +67,7 @@ end;
 
 % Run the bootstrap
 perm =  [];
-for it = 1:niters
+for it = 1:niter
   
   nx = x(randperm(length(x)));
   ny = y(randperm(length(y)));
@@ -83,8 +86,8 @@ end;
 
 % Calculate the probability of observing a stronger correlation by chance
 if true_cxy > mean(perm);
-    p = length(find(perm > true_cxy))/niters;
+    p = length(find(perm > true_cxy))/niter;
 else
-    p = length(find(perm < true_cxy))/niters;
+    p = length(find(perm < true_cxy))/niter;
 end;
 

@@ -1,24 +1,25 @@
-function [p true_stat stat_ci boot] = bootstrap_regression(x,y,contrast,varargin);
+function [p true_stat stat_ci boot] = bagging_regression(x,y,contrast,varargin);
 
-% function [p true_stat CI sim] = bootstrap_regression(X,Y,C,OPTS);
+% function [p true_stat CI sim] = bagging_regression(X,Y,C,OPTS);
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
-% BOOTSTRAP_REGRESSION:
-% Uses a bootstrapping approach X against Y using OLS regression to evalaute the contrast
+% BAGGING_REGRESSION:
+% Uses an MCMC subsampling approach X against Y using OLS regression to evalaute the contrast
 % effect modeled in the contrast vector C. 
 % 
 % INPUTS:
-%        X    = NxL matrix where N = # observations and L = # of independent variables;
+%        X    = NxC matrix where N = # observations and C = # of independent variables;
 %               (Note: Do not include an intercept column in X)
 %        Y    = Nx1 vector.
-%        C    = Lx1 contrast vector for statistical estimation.
+%        C    = Cx1 contrast vector for statistical estimation
 %
 %     Optional Input: 
-%           'n_iter'     = number of simulations to perform
+%           'niter'     = number of simulations to perform
 %           'stat_type' = what kind of contrast to perform?  A 
 %                         t-test 't' or a simple beta comparison 
 %                         'simple' (Default)
+%           'ratio'     = subsampling ratio (Default = 2/3rds)
 %           'reg_type'  = type of regression to use: 'ols_regress' (simple OLS, Default)
 %                          or 'qr_regress' (QR decomposition)
 % 
@@ -29,7 +30,7 @@ function [p true_stat stat_ci boot] = bootstrap_regression(x,y,contrast,varargin
 %
 %     CI        = Confidence interval of the bootstrap
 %
-%     sim      = n_iter x 1 vector of simulated contrasts
+%     sim      = niter x 1 vector of simulated contrasts
 %     
 % Note: Bootstrapping happen by subsampling with replacement the input vectors
 % to estimate a confidence interval of a parameter.
@@ -42,10 +43,10 @@ function [p true_stat stat_ci boot] = bootstrap_regression(x,y,contrast,varargin
 % Reset random number genrator as a precaution (changing to using Jason's approach)
 RandStream('mt19937ar','Seed',sum(100*clock));
 
-n_iter = 1000;
+niter = 1000;
 stat_type = 'simple';
+ratio = 2/3;
 reg_type = 'ols_regress';
-n_thread = 0;
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -64,56 +65,41 @@ if size(y,2) > size(y,1); y = y'; end;
 eval(sprintf('[betas, r] = %s(y,x);',reg_type));
 se = se_calc(r,x)';
 
-switch stat_type
-  case 't';
-    true_stat = [1 contrast] * [betas ./ se];
-  case 'simple'
-    true_stat = [1 contrast] * betas;
-  otherwise
-    error('Unknown comparison type');
-end;
-
 % Get number of data points
 n = length(x);
 
-try 
-  if ~matlabpool('size') & n_threads > 0;
-    if n_thread == Inf;
-      matlabpool OPEN;
-    else
-      matlabpool(n_thread);
+for iter = 1:niter
+    
+    indx = randperm(n);
+    indx = indx(1:round(ratio*n));
+
+    nx = x(indx,:);
+    ny = y(indx,:);
+
+    eval(sprintf('[betas, r] = %s(ny,nx);',reg_type));
+    se = se_calc(r,nx)';
+
+    switch stat_type
+      case 't';
+        boot(iter) = [1 contrast] * [betas ./ se];
+
+      case 'simple'
+    	boot(iter) = [1 contrast] * betas;
+
+        otherwise
+        error('Unknown comparison type');
     end;
-  end
-  is_par = 1;
-catch
-  is_par = 0;
-end;
 
-
-qr_flag = strcmpi(reg_type,'qr_regress');
-
-if is_par 
-  parfor iter = 1:n_iter
-     [boot(iter), boot_se(iter)] = simulate_iteration(x,y,contrast,n,qr_flag);
-  end;
-
-else
-  for iter = 1:n_iter
-    [boot(iter), boot_se(iter)] = simulate_iteration(x,y,contrast,n,qr_flag);
-  end;
-end;
-
-switch stat_type
-  case 't';
-    boot = boot./boot_se;
+    boot_se(iter)   = contrast * se;
 end;
 
 if mean(boot) > 0;
-    p = length(find(boot < 0))/n_iter;
+    p = length(find(boot < 0))/niter;
 else
-    p = length(find(boot > 0))/n_iter;
+    p = length(find(boot > 0))/niter;
 end;
 
+true_stat = mean(boot);
 
 % Estmiated CI to account for asymmetries in the simulations
 sboot = sort(boot);
@@ -122,34 +108,9 @@ ub_pt = round(length(sboot)*0.975);
 
 stat_ci = [sboot(lb_pt) sboot(ub_pt)];
 
-%stat_ci = [mean(boot_stat)-std(boot_stat)*1.96 mean(boot_stat)+std(boot_stat)*1.96];
     
-
 return;
 
-function [boot, boot_se] = simulate_iteration(x,y,contrast,n,qr)
 
-  indx = floor(rand(1,n)*(n-1))+1;
-  nx = x(indx,:);
-  ny = y(indx,:);
-      
-  switch qr
-  case 1
-    [betas,r] = qr_regress(ny,nx);
-  case 0
-    [betas,r] = ols_regress(ny,nx);
-  end;
-
-  boot = [0 contrast] * betas;
-
-  % Calculate SE
-  n = size(nx,1);
-  sigma = sqrt( nansum(r.^2) / (n-2) );
-
-  for i = 1:size(nx,2);
-    se(i) = sqrt( sigma.^2 ./ nansum(nx(:,i).^2) );
-  end;
-
-  boot_se   = contrast * se;
 
 

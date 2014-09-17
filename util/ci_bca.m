@@ -29,18 +29,22 @@ function [ci, p] = ci_bca(coefs, boot, alpha);
 
 n_coef = length(coefs);
 
+if ~coefs & n_coef == 1 & size(boot,2)>1
+    coefs = repmat(coefs,1,size(boot,2));
+end;
+
 % Set default value to 0.05 with two tails
 if nargin < 3 | isempty(alpha); alpha = 0.025; end;
 
 % Modified from Tor Wager routine
 
 % Bias factor
-[B, ncols] = size(boot');
-prop_less  = sum(boot' < repmat(mean(boot'),B,1))./B;
+[B, ncols] = size(boot);
+prop_less  = sum(boot < repmat(mean(boot),B,1))./B;
 z0 = norminv(prop_less);
 
 % Acceleration Factor: Borrowed from bootbca_pval.m by Tor Wager et al.
-jstat = jackknife(@mean, boot');
+jstat = jackknife(@mean, boot);
 n = size(jstat,1);
 score = -(jstat - repmat(mean(jstat), n, 1) ); % score function at stat;
 skew = sum(score.^3)./(sum(score.^2).^1.5);  %skewness of the score function
@@ -56,10 +60,10 @@ a1 = normcdf(a1);
 a2 = z0 + ( (z0 + z(2)) ./ (1 - a .* (z0 + z(2))) );
 a2 = normcdf(a2);
 
-ci = [diag(prctile(boot',a1*100))'; diag(prctile(boot',a2*100))']; 
+ci = [diag(prctile(boot,a1*100))'; diag(prctile(boot,a2*100))']; 
 
 % Then estimate the p-values
-pct = sum(boot' < repmat(coefs,1,n)')./B;
+pct = sum(boot < repmat(coefs,n,1))./B;
 
 % Adjust for ceilings
 pct_lb = max(pct,1./B);
@@ -76,6 +80,6 @@ zpct = norminv(pct_ub) - z0;
 zadj = ( zpct .* (1- a.* (z0)) - z0 ) ./ (1 + a.* zpct);
 
 p = normcdf(zadj);
-%is_lower = find(pct > 0.5);
-%p(is_lower) = 1-p(is_lower);
+is_lower = find(pct > 0.5);
+p(is_lower) = 1-p(is_lower);
 

@@ -35,6 +35,7 @@ mu = mean(boot);
 sigma = std(boot);
 
 p = normcdf(coefs,mu,sigma);
-ci(1) = norminv(alpha,mu,sigma);
-ci(2) = norminv(1-alpha,mu,sigma);
+ci(1,:) = norminv(alpha,mu,sigma);
+ci(2,:) = norminv(1-alpha,mu,sigma);
 
+if coefs < 0; p = 1-p; end;

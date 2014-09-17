@@ -1,34 +1,30 @@
-function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
+function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
 
-% function [coeffs perms] = permutation_mediation(X,Y,M,W,C,opts)
+%function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
-% PERMUTATION_MEDIATION:
-% Performs a permutation mediation between two series of data
+% BAGGING_MEDIATION:
+% Performs a MCMC subsampling mediation between two series of data
 % to estimate the signficiance of mediator variables M1-Mi on the relationship
 % between X & Y. Follows methods reported in Cerin et al. (2006) & Preacher
 % and Hayes (2008). 
 % 
 % INPUTS:
-%       X, Y  = independent, dependent, mediator and moderator variables
-%       respectively.  X & Y are Nx1 vectors of continous data. M & W are NxI
-%       vectorx with I = # of mediating or moderating factors.
-%
-%       M, W  = mediator and moderator variables respectively. These are 
-%               cell arrays with length S (max S=2) and each entry in the 
-%               array containing an NxI vector. S is the number of indirect
-%               pathways being modeled, and I being the number of mediating
-%               or moderating factors being modeled. No moderating pathway is 
-%               modeled if W is left empty (i.e., []). 
+%       X,Y,M,W  = independent, dependent, mediator & moderator variables
+%       respectively.  X & Y are Nx1 vectors of continous data. M is an NxI
+%       vector with I = # of mediator variables
 % 
+%       (Note: Moderator only works on a-pathways at the moment)
+%
 %       C = NxL Matrix of covariates (L = # covariates).  If no covariates desired,
 %       then give an empty matrix (i.e., [])
-%
+%      
 %     Optional Input: 
-%           'niter'    = Number of simulations to perform (default = 1000)
+%           'niter'     = number of simulations to perform
 %           'reg_type'  = type of regression to use: 'ols_regress' (simple OLS, Default)
-%                          or 'qr_regress' (QR decomposition)
+%                          or 'qr_regress' (QR decomposition)%
+%           'ratio'     = subsampling ratio (Default = 2/3rds)
 %
 % OUTPUT:  
 %       
@@ -38,8 +34,8 @@ function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
 %       perms  = Object of simulation arrays of each pathway coefficient from 
 %                the permutation tests.
 %                This is a structure with p field for each mediation path simulated.
-% 
-% Written by T. Verstynen & A. Weinstein (2011). Updated 2013, 2014.
+%
+% Written by T. Verstynen & A. Weinstein (2011). Modified by T. Verstynen (2013)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
@@ -52,6 +48,7 @@ global reg_type n_paths n_covs n_mediators n_moderators
 
 niter = 1000;
 reg_type = 'ols_regress';
+ratio = 2/3;
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -98,17 +95,24 @@ coeffs = estimate_pathways(Y,X,M,W,C);
 % For summarizing
 coeff_list = {'a','b','c_prime','c','ab','d','adb','e','f'};
 
+% Get number of samples;
+n = size(X,1);
+
 % Now run the bootstrap
 for it = 1:niter
   
-    % Permute all but the covariates
-    nx = X(randperm(length(X)));
-    ny = Y(randperm(length(Y)));
+   %Subsampled index
+   indx = randperm(n);
+   indx = indx(1:round(ratio*n));
+
+   % Pull from data
+   nx = X(indx,:);
+   ny = Y(indx,:);
 
     for p = 1:n_paths     
-        nm{p} = M{p}(randperm(size(M{p},1)),:);
+        nm{p} = M{p}(indx,:);
         if n_moderators(p);
-            nw{p} = W{p}(randperm(size(W{p},1)),:);
+            nw{p} = W{p}(indx,:);
         else
             nw{p} = [];
         end;

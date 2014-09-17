@@ -43,6 +43,9 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %           contrast that reflects simple combination of regressors (i.e., B1-B2).
 %           Future work will allow voxel-wise F-tests.
 %           
+%           reg_type  = type of regression to use: 'ols_regress' (simple OLS, Default)
+%           or 'qr_regress' (QR decomposition)
+%
 % OUTPUT:  Outputs 3 files with postfixes determined by 'out_file' ID.  The
 % output file prefix indicates it's value:
 %
@@ -83,7 +86,7 @@ load_type = 'normal'; % Opts: 'normal','untouch'
 n_iter    = 500;
 norm_type = 'zscore';
 con_type  = 't'; % Opts: 't', 'simple' -> just the betas
-ratio  = 2/3; % With bootstrap method only
+reg_type  = 'ols_regress'; 
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -92,7 +95,7 @@ end
 
 % Store the parameters in a log object
 parameters = struct('method',method,'outfile',out_file,'load_type',load_type,...
-    'n_iter',n_iter,'norm_type',norm_type,'con_type',con_type,'ratio',ratio);
+    'n_iter',n_iter,'norm_type',norm_type,'con_type',con_type,'reg_type',reg_type);
 
 % Get the output path to store the parameters
 [fp,fn,fe] = fileparts(out_file);
@@ -151,13 +154,16 @@ bcapOUT = NaN(mask_dim);
 % Modify contrast to include the covariates and constant terms
 contrast = [contrast; zeros(size(covariates,2),1); 0];
 
-% Setup the constant term used in the models
-const = ones(size(covariates,1),1);
-
 % Next run the loops
 fprintf('\t Regressing voxels \n')
 old_vox_perc = 0;  % The counter variable
 
+% Since the design matrix never changes (i.e., brain is always an outcome here)
+if isempty(covariates);
+    dsX = [regressor];
+else
+    dsX = [regressor covariates];
+end;
 
 for i = 1:length(good_vox)
 
@@ -170,55 +176,22 @@ for i = 1:length(good_vox)
     
     % Extract the voxels data
     series = squeeze(zY(vx(i),vy(i),vz(i),:));
-
-    % Setup the design matrix
-    const = ones(size(series));
     
-    if isempty(covariates);
-        dsX = [regressor const];
-    else
-        dsX = [regressor covariates const];
-    end;
-    
-    switch method;
-    case 'bootstrap';   
-        % Run the bootstrap
-        [p, t, ci, boot] = bootstrap_regression(dsX,series,contrast','stat_type',con_type,'niter',n_iter,'ratio',ratio);
+    % Evaluate the model
+    [con, c_p, c_p_bca, m_sim, std_sim] = run_model(dsX, series, contrast, parameters)
 
-        % Calculate percentile significance
-        [c_ci, c_p] = ci_percentile(0,boot);
-    
-        % Calculate BCA significance
-        [c_ci_bca, c_p_bca] = ci_bca(0,boot);
-
-    case 'permutation'
-        % Run the permutation
-        [p, t, ci, boot] = permutation_regression(dsX,series,contrast','stat_type',con_type,'niter',n_iter);
-
-        % Calculate percentile significance
-        [c_ci, c_p] = ci_percentile(t,boot);
-        c_p = 1-c_p;
-
-        % Calculate BCA significance
-        [c_ci_bca, c_p_bca] = ci_bca(t,boot);
-        c_p_bca = 1-c_p_bca;
-    
-    otherwise
-       error(sprintf('Unknown Analysis Method %s',method));
-   end;
- 
-    % Store datat
-    tOUT(vx(i),vy(i),vz(i)) = t;
+    % Store data in matrix form
+    conOUT(vx(i),vy(i),vz(i)) = con;
     ppOUT(vx(i),vy(i),vz(i)) = c_p;
     bcapOUT(vx(i),vy(i),vz(i)) = single(c_p_bca);
-    sOUT(vx(i),vy(i),vz(i)) = std(boot);
+    sOUT(vx(i),vy(i),vz(i)) = std_sim;
     
     % Store the output
-    boot_par(:,i) = [mean(boot) std(boot)];
+    boot_par(:,i) = [m_sim std_sim];
 end;
 
 % Store the new nifti files
-tnii = mask;        tnii.img = tOUT;
+connii = mask;      connii.img = conOUT;
 ppnii = mask;       ppnii.img = ppOUT;
 bcapnii = mask;     bcapnii.img = bcapOUT;
 inv_ppnii = mask;   inv_ppnii.img = 1-ppOUT;
@@ -226,7 +199,7 @@ inv_bcapnii = mask; inv_bcapnii.img = 1-bcapOUT;
 snii = mask;        snii.img = sOUT;
 
 % Assign output names
-tfile = fullfile(fp,sprintf('con_%s%s',fn,fe));
+confile = fullfile(fp,sprintf('con_%s%s',fn,fe));
 ppfile = fullfile(fp,sprintf('perc_p_%s%s',fn,fe));
 bcapfile = fullfile(fp,sprintf('bca_p_%s%s',fn,fe));
 inv_ppfile = fullfile(fp,sprintf('perc_inv_p_%s%s',fn,fe));
@@ -236,14 +209,14 @@ sfile = fullfile(fp,sprintf('std_%s%s',fn,fe));
 % Save the output accordingly
 switch load_type
     case 'normal'
-       save_nii(tnii,tfile);
+       save_nii(connii,confile);
        save_nii(ppnii,ppfile);
        save_nii(bcapnii,bcapfile);
        save_nii(inv_ppnii,inv_ppfile);
        save_nii(inv_bcapnii,inv_bcapfile);
        save_nii(snii,sfile);
     case 'untouch'
-       save_untouch_nii(tnii,tfile);
+       save_untouch_nii(connii,confile);
        save_untouch_nii(ppnii,ppfile);
        save_untouch_nii(bcapnii,bcapfile);
        save_untouch_nii(inv_ppnii,inv_ppfile);
@@ -262,7 +235,42 @@ return;
 
 
 % -----------------------------------------
-% Start Subfunctions
+function [t, c_p, c_p_bca, m_sim, std_sim] = run_model(dsX, series, contrast, params)
+
+switch params.method;
+    case 'bootstrap';   
+        % Run the bootstrap
+        [p, t, ci, sim] = bootstrap_regression(dsX,series,contrast',...
+            'stat_type',params.con_type,'n_iter',params.n_iter,...
+            'reg_type',params,reg_type);
+
+        % Calculate percentile significance
+        [c_ci, c_p] = ci_percentile(0,sim);
+    
+        % Calculate BCA significance
+        [c_ci_bca, c_p_bca] = ci_bca(0,sim);
+
+    case 'permutation'
+        % Run the permutation
+        [p, t, ci, sim] = permutation_regression(dsX,series,contrast',...
+            'stat_type',params.con_type,'n_iter',params.n_iter,...
+            'reg_type',params.reg_type);
+
+        % Calculate percentile significance
+        [c_ci, c_p] = ci_percentile(t,sim);
+        c_p = 1-c_p;
+
+        % Calculate BCA significance
+        [c_ci_bca, c_p_bca] = ci_bca(t,sim);
+        c_p_bca = 1-c_p_bca;
+    
+    otherwise
+       error(sprintf('Unknown Analysis Method %s',method));
+   end;
+
+
+
+% -----------------------------------------
 function out_nii = niiload(file,type);
 
 switch type

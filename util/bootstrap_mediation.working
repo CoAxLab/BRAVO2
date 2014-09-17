@@ -1,32 +1,27 @@
-function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
+function [coeffs, perms] = bootstrap_mediation(X,Y,M,W,C,varargin)
 
-% function [coeffs perms] = permutation_mediation(X,Y,M,W,C,opts)
+%function [coeffs perms] = bootstrap_mediation(X,Y,M,C,OPTS)
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
-% PERMUTATION_MEDIATION:
-% Performs a permutation mediation between two series of data
+% BOOTSTRAP_MEDIATION:
+% Performs a bootstrap mediation between two series of data
 % to estimate the signficiance of mediator variables M1-Mi on the relationship
 % between X & Y. Follows methods reported in Cerin et al. (2006) & Preacher
 % and Hayes (2008). 
 % 
 % INPUTS:
-%       X, Y  = independent, dependent, mediator and moderator variables
-%       respectively.  X & Y are Nx1 vectors of continous data. M & W are NxI
-%       vectorx with I = # of mediating or moderating factors.
+%       X,Y,M, W  = independent, dependent, mediator & moderator variables
+%       respectively.  X & Y are Nx1 vectors of continous data. M is an NxI
+%       vector with I = # of mediator variables
 %
-%       M, W  = mediator and moderator variables respectively. These are 
-%               cell arrays with length S (max S=2) and each entry in the 
-%               array containing an NxI vector. S is the number of indirect
-%               pathways being modeled, and I being the number of mediating
-%               or moderating factors being modeled. No moderating pathway is 
-%               modeled if W is left empty (i.e., []). 
-% 
+%       (Note: Moderator only works on a-pathways at the moment)
+%
 %       C = NxL Matrix of covariates (L = # covariates).  If no covariates desired,
 %       then give an empty matrix (i.e., [])
-%
+%      
 %     Optional Input: 
-%           'niter'    = Number of simulations to perform (default = 1000)
+%           'niter'     = number of simulations to perform
 %           'reg_type'  = type of regression to use: 'ols_regress' (simple OLS, Default)
 %                          or 'qr_regress' (QR decomposition)
 %
@@ -38,8 +33,8 @@ function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
 %       perms  = Object of simulation arrays of each pathway coefficient from 
 %                the permutation tests.
 %                This is a structure with p field for each mediation path simulated.
-% 
-% Written by T. Verstynen & A. Weinstein (2011). Updated 2013, 2014.
+%
+% Written by T. Verstynen & A. Weinstein (2011). Modified by T. Verstynen (2013)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
@@ -52,6 +47,7 @@ global reg_type n_paths n_covs n_mediators n_moderators
 
 niter = 1000;
 reg_type = 'ols_regress';
+n_threads = 2;
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -98,17 +94,75 @@ coeffs = estimate_pathways(Y,X,M,W,C);
 % For summarizing
 coeff_list = {'a','b','c_prime','c','ab','d','adb','e','f'};
 
-% Now run the bootstrap
-for it = 1:niter
-  
-    % Permute all but the covariates
-    nx = X(randperm(length(X)));
-    ny = Y(randperm(length(Y)));
+% Get number of samples;
+n = size(X,1);
 
+
+try 
+  if ~matlabpool('size') & n_threads > 0;
+    if n_threads == Inf;
+      matlabpool OPEN;
+    else
+      matlabpool(n_threads);
+    end;
+  end
+  is_par = 1;
+catch
+  is_par = 0;
+end;
+
+if is_par
+
+    parfor it = 1:niter
+       sim_coeffs = simulate_iteration(x,y,m,w,C,n,n_paths);
+       
+       %Store all the simulations
+       for p = 1:n_paths;
+        perms(p).a(it,:) = sim_coeffs(p).a;
+        perms(p).b(it,:) = sim_coeffs(p).b;
+        perms(p).c_prime(it,:) = sim_coeffs(p).c_prime;
+        perms(p).c(it,:) = sim_coeffs(p).c;
+        perms(p).ab(it,:) = sim_coeffs(p).ab;
+        perms(p).d(it,:) = sim_coeffs(p).d;
+        perms(p).adb(it,:) = sim_coeffs(p).adb;
+        perms(p).e(it,:) = sim_coeffs(p).e;
+        perms(p).f(it,:) = sim_coeffs(p).f;
+       end;
+    end;
+else
+    
+    for it = 1:niter
+     sim_coeffs = simulate_iteration(x,y,m,w,C,n,n_paths);
+     
+       %Store all the simulations
+       for p = 1:n_paths;
+        perms(p).a(it,:) = sim_coeffs(p).a;
+        perms(p).b(it,:) = sim_coeffs(p).b;
+        perms(p).c_prime(it,:) = sim_coeffs(p).c_prime;
+        perms(p).c(it,:) = sim_coeffs(p).c;
+        perms(p).ab(it,:) = sim_coeffs(p).ab;
+        perms(p).d(it,:) = sim_coeffs(p).d;
+        perms(p).adb(it,:) = sim_coeffs(p).adb;
+        perms(p).e(it,:) = sim_coeffs(p).e;
+        perms(p).f(it,:) = sim_coeffs(p).f;
+       end;
+    end;
+end;
+warning on
+
+return;
+
+
+function sim_coeffs = simulate_iteration(x,y,m,w,C,n,n_paths)
+
+    indx = floor(rand(1,n)*(n-1))+1;
+    nx = x(indx,:);
+    ny = y(indx,:);
+  
     for p = 1:n_paths     
-        nm{p} = M{p}(randperm(size(M{p},1)),:);
+        nm{p} = M{p}(indx,:);
         if n_moderators(p);
-            nw{p} = W{p}(randperm(size(W{p},1)),:);
+            nw{p} = W{p}(indx,:);
         else
             nw{p} = [];
         end;
@@ -117,16 +171,3 @@ for it = 1:niter
     % Test the permuated model
     sim_coeffs = estimate_pathways(ny,nx,nm,nw,C);
 
-    %Store all the simulations
-    for p = 1:n_paths;
-        for c = 1:length(coeff_list);
-            eval(sprintf('perms(p).%s(it,:) = sim_coeffs(p).%s;',coeff_list{c},coeff_list{c}));
-        end;
-    end
-
-end;
-warning on
-
-
-
-  
