@@ -69,9 +69,9 @@ se = se_calc(r,x)';
 
 switch stat_type
   case 't';
-    true_stat = [1 contrast] * [betas ./ se];
+    true_stat = [0 contrast] * [betas ./ se];
   case 'simple'
-    true_stat = [1 contrast] * betas;
+    true_stat = [0 contrast] * betas;
   otherwise
     error('Unknown comparison type');
 end;
@@ -141,7 +141,7 @@ function [boot, boot_se] = simulate_iteration(x,y,contrast,qr)
     [betas,r] = ols_regress(ny,nx);
   end;
 
-  boot = [1 contrast] * betas;
+  boot = [0 contrast] * betas;
 
   % Calculate SE
   n = size(nx,1);

@@ -81,10 +81,10 @@ for iter = 1:niter
 
     switch stat_type
       case 't';
-        boot(iter) = [1 contrast] * [betas ./ se];
+        boot(iter) = [0 contrast] * [betas ./ se];
 
       case 'simple'
-    	boot(iter) = [1 contrast] * betas;
+    	boot(iter) = [0 contrast] * betas;
 
         otherwise
         error('Unknown comparison type');

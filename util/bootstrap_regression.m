@@ -66,9 +66,9 @@ se = se_calc(r,x)';
 
 switch stat_type
   case 't';
-    true_stat = [1 contrast] * [betas ./ se];
+    true_stat = [0 contrast] * [betas ./ se];
   case 'simple'
-    true_stat = [1 contrast] * betas;
+    true_stat = [0 contrast] * betas;
   otherwise
     error('Unknown comparison type');
 end;
