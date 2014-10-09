@@ -7,7 +7,15 @@ function coeffs = estimate_pathways(Y,X,M,W,C)
 % ESTIMATE_PATHWAYS:
 % Estimate the full regression model pathways for all inputs provide
 % including controlling for covariates. The moderator input (W) is
-% Only estimated on the X->M pathways (see Hayes Model #7)
+% Only estimated on the X->M (i.e., A) pathways (see Hayes Model #7)
+%
+% This is a core utility function for the mediation functions.
+% 
+% Released as BRAVO 2.0 by T. Verstynen (2014)
+%
+% All code is released under BSD 2-clause license (FreeBSD 9.0).  See
+% http://opensource.org/licenses/BSD-2-Clause for more information.
+
 
 % Grab globals from parent function
 global reg_type n_paths n_covs n_mediators n_moderators

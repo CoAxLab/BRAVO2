@@ -10,23 +10,40 @@ function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
 % between X & Y. Follows methods reported in Cerin et al. (2006) & Preacher
 % and Hayes (2008). 
 % 
-% INPUTS:
-%       X, Y  = independent, dependent, mediator and moderator variables
-%       respectively.  X & Y are Nx1 vectors of continous data. M & W are NxI
-%       vectorx with I = # of mediating or moderating factors.
+% BRAVO can now run several types of mediation models:
 %
-%       M, W  = mediator and moderator variables respectively. These are 
-%               cell arrays with length S (max S=2) and each entry in the 
-%               array containing an NxI vector. S is the number of indirect
-%               pathways being modeled, and I being the number of mediating
-%               or moderating factors being modeled. No moderating pathway is 
-%               modeled if W is left empty (i.e., []). 
+% 1-step Mediation:
+%  Y = C'*X + B*M = C'*X + B*A*X
+%
+% 1-step Moderated Mediation:
+%  Y = C'*X + B*M = C'*X + B*(A*X + E*W + F*W*X)
+%
+% 2-step Mediation:
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*A1*X + B2*(D*M1+A2*X) 
+%    = C'*X + B1*A1*X + B2*X*(D*A1+A2) 
+%
+% 2-step Moderated Mediation (A1 pathway only):
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*(A1*X + E*W + F*W*X) + B2*(D*M1+A2*X) 
+%    = C'*X + B1*(A1*X + E*W + F*W*X)  + B2*X*(D*A1+A2) 
+%
+% Note: For the moderated mediation models BRAVO does not yet implement probing  
+%       as specified by Preacher, Rucker, & Hayes (2013). Checke the GitHub
+%       repository for updates in the future.
 % 
+% INPUTS:
+%       X,Y,M,W  = independent, dependent, mediator & moderator variables
+%       respectively.  X & Y are Nx1 vectors of continous data. M is an 1xP
+%       cell array, where P = 1 or 2 depending on how many mediation steps
+%       are specified in the model. Each entry in the M cell array should be 
+%       an an NxI vector with I = # of mediator variables.
+%
+%       (Note: Moderated mediation only works on a1-pathways at the moment)
+%
 %       C = NxL Matrix of covariates (L = # covariates).  If no covariates desired,
 %       then give an empty matrix (i.e., [])
-%
+%      
 %     Optional Input: 
-%           'niter'    = Number of simulations to perform (default = 1000)
+%           'n_iter'     = number of simulations to perform
 %           'reg_type'  = type of regression to use: 'ols_regress' (simple OLS, Default)
 %                          or 'qr_regress' (QR decomposition)
 %
@@ -38,8 +55,10 @@ function [coeffs, perms] = permutation_mediation(X,Y,M,W,C,varargin)
 %       perms  = Object of simulation arrays of each pathway coefficient from 
 %                the permutation tests.
 %                This is a structure with p field for each mediation path simulated.
+%
+% Written by T. Verstynen & A. Weinstein (2011). Modified by T. Verstynen (2013)
 % 
-% Written by T. Verstynen & A. Weinstein (2011). Updated 2013, 2014.
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.

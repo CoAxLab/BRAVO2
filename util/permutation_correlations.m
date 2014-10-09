@@ -28,6 +28,8 @@ function [p true_cxy perm] = permutation_correlations(x,y,varargin);
 %
 % Written by Timothy Verstynen (2005; updated for BRAVO 2011 and 2013)
 %
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
+%
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
 

@@ -2,7 +2,6 @@ For more information see the official BRAVO site:
 
 https://sites.google.com/site/bravotoolbox/
 
-
 BRAVO is a Matlab toolbox for performing simple and nested regression
 analysis on voxelwise observations in MRI data.  The key feature of
 BRAVO is the use of "bootstrap" or permutation statistics to estimate
@@ -26,12 +25,13 @@ covariate factors to control for in the regression.
 Mediation: Uses nested regression models to estimate causal mediating
 pathways between a dependent variable, one or multiple potential
 mediators, and the voxelwise measure, while controlling for nuisance
-variables.
+variables. The new release (Oct. 2014, BRAVO 2.0) includes options for
+moderated mediation (on a-pathways) and 2-step mediation.
 
 Performance
 
-BRAVO was benchmarked and developed in Matlab R2011a on an Ubuntu
-10.10 system with an Intel(R) Xeon(R) processor (4 cores, 3.10GHz)
+BRAVO was benchmarked and developed in Matlab R2013a on an Ubuntu
+14.04 system with an Intel(R) Xeon(R) processor (4 cores, 3.10GHz)
 system and 8Gb of RAM.  Minimum recommended system specifications are
 dual core processor (at least 2Ghz) and 4Gb RAM (depending on dataset
 size).  All code was tested using DTI and VBM data with a 91x109x91

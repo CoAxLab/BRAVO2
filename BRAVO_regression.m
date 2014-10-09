@@ -36,7 +36,7 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %           (Default 500 iterations).
 %
 %           norm_type = How to de-mean the data 'zscore'(Default) or
-%           'mean0'
+%           'mean0'. Only works on the Y factor
 %
 %           con_type  = What type of contrast to run.  Options are 't' for
 %           T-test contrast (i.e., B1-B2 ./ SE(B1-B2)) or 'simple' (Default)
@@ -76,6 +76,8 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %      used in the analysis run.
 % 
 % Written by T. Verstynen (2011). Updated in 2013
+%
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
@@ -268,62 +270,3 @@ switch params.method;
        error(sprintf('Unknown Analysis Method %s',method));
    end;
 
-
-
-% -----------------------------------------
-function out_nii = niiload(file,type);
-
-switch type
-    case 'normal'
-        out_nii = load_nii(file);
-    case 'untouch'
-        out_nii = load_untouch_nii(file);
-    otherwise
-        error('Unknown data loader type');
-end;
-return;
-
-
-% -----------------------------------------
-function mat_data = getmat(nii_files,mask_dim,load_type);
- 
-if ischar(nii_files);
-    n_files = size(nii_files,1);
-elseif iscell(nii_files);
-    n_files = length(nii_files);
-else
-    error('Unknown data file list type.  Has to be an NxP character array or cell array.');
-end;
-
-% If it's a 4-D file, then just do that one;
-if n_files == 1;
-    
-    if ischar(nii_files); file = deblank(nii_files(1,:)); 
-    else
-        file = nii_files{1};
-    end;
-
-    nii = niiload(file,load_type);
-    mat_data = nii.img;
-else
-    % Otherwise loop through and load each file
-    % Get the data files setup
-    for f = 1:n_files
-
-        if ischar(nii_files);
-            file = deblank(nii_files(f,:));
-        else
-            file = nii_files{f};
-        end;
-
-        % Load the data
-        nii = niiload(file,load_type);
-
-        % Stop if the image has incorrect dimensions
-        if sum(size(nii.img)-mask_dim); error(sprintf('Image %d does not match mask image dimensions',f)); end;
-
-        % Store in the data matrix
-        mat_data(:,:,:,f) = nii.img;
-    end;
-end;
-return;

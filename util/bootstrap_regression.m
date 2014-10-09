@@ -36,6 +36,8 @@ function [p true_stat stat_ci boot] = bootstrap_regression(x,y,contrast,varargin
 % 
 % Written by Tim Verstynen (2013)
 %
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
+%
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
 
@@ -45,7 +47,7 @@ RandStream('mt19937ar','Seed',sum(100*clock));
 n_iter = 1000;
 stat_type = 'simple';
 reg_type = 'ols_regress';
-n_thread = 0;
+n_thread = 0; % Note multithreading is not fully supported yet. Don't turn this on.
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -122,11 +124,9 @@ ub_pt = round(length(sboot)*0.975);
 
 stat_ci = [sboot(lb_pt) sboot(ub_pt)];
 
-%stat_ci = [mean(boot_stat)-std(boot_stat)*1.96 mean(boot_stat)+std(boot_stat)*1.96];
-    
-
 return;
 
+% -----------------------------------------
 function [boot, boot_se] = simulate_iteration(x,y,contrast,n,qr)
 
   indx = floor(rand(1,n)*(n-1))+1;

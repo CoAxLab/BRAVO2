@@ -8,7 +8,27 @@ function BRAVO_mediation(X,Y,M,covariates,mask_file,varargin);
 % Performs a voxelwise multiple mediator regression model using bootstrap 
 % or permutation tests to estimate the signficiance of mediator variable M 
 % on the relationship between X & Y. Follows methods reported in 
-% Cerin et al. (2006) & Preacher and Hayes (2008). 
+% Cerin et al. (2006) & Preacher and Hayes (2008)  & Preacher, Rucker and Hayes (2013)
+%
+% BRAVO can now run several types of mediation models:
+%
+% 1-step Mediation:
+%  Y = C'*X + B*M = C'*X + B*A*X
+%
+% 1-step Moderated Mediation:
+%  Y = C'*X + B*M = C'*X + B*(A*X + E*W + F*W*X)
+%
+% 2-step Mediation:
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*A1*X + B2*(D*M1+A2*X) 
+%    = C'*X + B1*A1*X + B2*X*(D*A1+A2) 
+%
+% 2-step Moderated Mediation (A1 pathway only):
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*(A1*X + E*W + F*W*X) + B2*(D*M1+A2*X) 
+%    = C'*X + B1*(A1*X + E*W + F*W*X)  + B2*X*(D*A1+A2) 
+%
+% Note: For the moderated mediation models BRAVO does not yet implement probing  
+%       as specified by Preacher, Rucker, & Hayes (2013). Checke the GitHub
+%       repository for updates in the future.
 % 
 % INPUTS:
 %       X,Y,M, = independent, dependent, mediator and moderator, variables
@@ -48,39 +68,51 @@ function BRAVO_mediation(X,Y,M,covariates,mask_file,varargin);
 %           reg_type  = type of regression to use: 'ols_regress' (simple OLS, Default)
 %           or 'qr_regress' (QR decomposition)
 % 
-% OUTPUT:  Outputs 5 files with postfixes determined by out_file ID.  The
-% output file prefix indicates it's value:
 %
-%       'a','b','c','ab'     = Contrast test value for each path in the
-%       mediation test.  If multiple mediators are used, the files end
-%       with 'm1','m2',...'mi', for the 1-i mediators used.  NOTE: The c 
-%       pathway is actually c-prime  
+% OUTPUT: BRAVO now outputs several files depending on the model being assessed.  
+%     If a serial model is specified, then the mediating path coefficients for 
+%     each path will be returned with the prefix "Path1" & "Path2". If only one 
+%     indirect pathway step is specified (i.e., a standard X->M-Y indirect 
+%     pathway model) then you will not  see the "Path2" prefix. 
 %
-%       '_z' = Z-score of observed regression coefficient against the
-%       bootstrap distribution (i.e., [coeff - mean(boot)]/std(boot)). For
-%       use in conjunction analysis.
+%     Each output file is a 4 dimensional image where the 4th dimension has
+%     as many variables as are specified by the model. For example if you have
+%     5 mediating factors in your model, your AB output will be a nifti file
+%     with 5 separate images.  The ordering of the images corresponds to the
+%     order you specified them in your model. 
 %
-%       'bca_p', 'bca_inv_p' = P-value of bootstrap using a bias corrected
-%       and accelerated adjustment. These show the probability that the
-%       null mean is larger than the observed effect size (i.e., strong positive
-%       effect sizes will have smaller p-values and strong negative
-%       effects will have larger p-values).  For negative effects use the
-%       1-p file ('inv_p') file to assess significance.
+%     Each pathway coefficient has four output image files.
 %
-%       'perc_p', 'perc_inv_p' = P-value of bootstrap using the standard
-%       percentile method.  As with teh BCA, the second file is the 1-p values
-%       should be used when estimating significance on negative effects
-%   
-%       'simulation_permutation_parameters.mat' = A vector of simulation
+%     1) The map of the statistical coefficients from the model specified. See
+%        description above for list of possible coefficients
+%
+%     2) 'bca_p', 'bca_inv_p' = P-value of bootstrap using a bias corrected
+%        and accelerated adjustment. These show the probability that the
+%        null mean is larger than the observed effect size (i.e., strong positive
+%        effect sizes will have smaller p-values and strong negative
+%        effects will have larger p-values).  For negative effects use the
+%        1-p file ('inv_p') file to assess significance.
+%
+%     3) 'perc_p', 'perc_inv_p' = P-value of bootstrap using the standard
+%        percentile method.  As with teh BCA, the second file is the 1-p values
+%        should be used when estimating significance on negative effects.
+%
+%     4) '_z' = Z-score of observed regression coefficient against the
+%        bootstrap distribution (i.e., [coeff - mean(boot)]/std(boot)). For
+%        use in conjunction analysis.
+%
+%     In addition two matlab files are returned. 
+%
+%   1) 'simulation_permutation_parameters.mat' = A vector of simulation
 %       distribution parameters from the permutation or bootstrap
 %       (depending on method used).  The order of the vector is [mean_a
 %       std_a mean_b std_b mean_ab std_ab mean_c std_c]
 %
-%      'parameters_log.mat' = An object describing all the parameters
+%   2) 'parameters_log.mat' = An object describing all the parameters
 %      used in the analysis run.
 % 
 % Written by T. Verstynen & A. Weinstein (2011). Updated by T. Verstynen
-% 2012 & 2013
+% 2012, 2013.  BRAVO 2.0 released 2014
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
@@ -351,101 +383,7 @@ end;
 
 return;
 
-% -----------------------------------------
-function mat_data = getmat(nii_files,mask_dim,load_type);
- 
-if ischar(nii_files);
-    n_files = size(nii_files,1);
-elseif iscell(nii_files);
-    n_files = length(nii_files);
-else
-    error('Unknown data file list type.  Has to be an NxP character array or cell array.');
-end;
 
-% If it's a 4-D file, then just do that one;
-if n_files == 1;
-    
-    if ischar(nii_files); file = deblank(nii_files(1,:)); 
-    else
-        file = nii_files{1};
-    end;
-
-    nii = niiload(file,load_type);
-    mat_data = nii.img;
-else
-    % Otherwise loop through and load each file
-    % Get the data files setup
-    mat_data = NaN([mask_dim n_files]);
-    for f = 1:n_files
-
-        if ischar(nii_files);
-            file = deblank(nii_files(f,:));
-        else
-            file = nii_files{f};
-        end;
-
-        % Load the data
-        nii = niiload(file,load_type);
-
-        % Stop if the image has incorrect dimensions
-        if sum(size(nii.img)-mask_dim); error(sprintf('Image %d does not match mask image dimensions',f)); end;
-
-        % Store in the data matrix
-        mat_data(:,:,:,f) = nii.img;
-    end;
-end;
-
-return;
-
-
-% -----------------------------------------
-function out_nii = niiload(file,type);
-
-switch type
-    case 'normal'
-        out_nii = load_nii(file);
-    case 'untouch'
-        out_nii = load_untouch_nii(file);
-    otherwise
-        error('Unknown data loader type');
-end;
-
-return;
-
-
-% -----------------------------------------
-function niisave(mask,mat,namestr,path,type);
-
-% Get number of dimensions (1 per mediating variable per path)
-n=size(mat,4);
-
-% Get the mask nii object
-nii = mask;
-
-if n > 1;
-    % Reset the nifti header to be 4-d if needed
-    nii.hdr.dime.dim(1) = 4;
-    nii.hdr.dime.dim(5) = n;
-end;
-
-% define the name
-name = fullfile(path,[namestr '.nii']);
-
-% Make sure the data format is appropriate
-nii.img = single(mat);
-nii.hdr.dime.datatype = 16;
-nii.hdr.dime.bitpix = 32;
-
-switch type
- case 'normal'
-    save_nii(nii, name);
-    case 'untouch'
-        save_untouch_nii(nii, name);
-    otherwise
-        error('Unknown data loader type');
-end;
-
-return
 
 % -----------------------------------------
 function out = norm_data(in,type);

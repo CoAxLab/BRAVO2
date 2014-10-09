@@ -39,6 +39,8 @@ function [p true_stat stat_ci perm] = permutation_regression(x,y,contrast,vararg
 % 
 % Written by Tim Verstynen (2007; updated 2013)
 %
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
+%
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
 
@@ -48,7 +50,7 @@ RandStream('mt19937ar','Seed',sum(100*clock));
 n_iter = 1000;
 stat_type = 'simple';
 reg_type = 'ols_regress';
-n_threads = 0;
+n_threads = 0; % Note multithreading is not fully supported yet. Don't turn this on.
 
 % Get variable input parameters
 for v=1:2:length(varargin),
@@ -125,6 +127,7 @@ stat_ci = [sboot(lb_pt) sboot(ub_pt)];
     
 return;
 
+% -----------------------------------------
 function [boot, boot_se] = simulate_iteration(x,y,contrast,qr)
 
   nx = [];

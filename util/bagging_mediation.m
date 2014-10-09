@@ -1,30 +1,54 @@
 function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
 
-%function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
+% NOTE: Bagging is only in beta release right now, but included as a
+% utility function for advanced users.
+% 
+% function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
 % BAGGING_MEDIATION:
-% Performs a MCMC subsampling mediation between two series of data
+% Performs a MC subsampling mediation between two series of data
 % to estimate the signficiance of mediator variables M1-Mi on the relationship
 % between X & Y. Follows methods reported in Cerin et al. (2006) & Preacher
 % and Hayes (2008). 
 % 
+% BRAVO can now run several types of mediation models:
+%
+% 1-step Mediation:
+%  Y = C'*X + B*M = C'*X + B*A*X
+%
+% 1-step Moderated Mediation:
+%  Y = C'*X + B*M = C'*X + B*(A*X + E*W + F*W*X)
+%
+% 2-step Mediation:
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*A1*X + B2*(D*M1+A2*X) 
+%    = C'*X + B1*A1*X + B2*X*(D*A1+A2) 
+%
+% 2-step Moderated Mediation (A1 pathway only):
+%  Y = C'*X + B1*M1 + B2*M2  = C'*X + B1*(A1*X + E*W + F*W*X) + B2*(D*M1+A2*X) 
+%    = C'*X + B1*(A1*X + E*W + F*W*X)  + B2*X*(D*A1+A2) 
+%
+% Note: For the moderated mediation models BRAVO does not yet implement probing  
+%       as specified by Preacher, Rucker, & Hayes (2013). Checke the GitHub
+%       repository for updates in the future.
+% 
 % INPUTS:
 %       X,Y,M,W  = independent, dependent, mediator & moderator variables
-%       respectively.  X & Y are Nx1 vectors of continous data. M is an NxI
-%       vector with I = # of mediator variables
-% 
-%       (Note: Moderator only works on a-pathways at the moment)
+%       respectively.  X & Y are Nx1 vectors of continous data. M is an 1xP
+%       cell array, where P = 1 or 2 depending on how many mediation steps
+%       are specified in the model. Each entry in the M cell array should be 
+%       an an NxI vector with I = # of mediator variables.
+%
+%       (Note: Moderated mediation only works on a1-pathways at the moment)
 %
 %       C = NxL Matrix of covariates (L = # covariates).  If no covariates desired,
 %       then give an empty matrix (i.e., [])
 %      
 %     Optional Input: 
-%           'niter'     = number of simulations to perform
+%           'n_iter'     = number of simulations to perform
 %           'reg_type'  = type of regression to use: 'ols_regress' (simple OLS, Default)
-%                          or 'qr_regress' (QR decomposition)%
-%           'ratio'     = subsampling ratio (Default = 2/3rds)
+%                          or 'qr_regress' (QR decomposition)
 %
 % OUTPUT:  
 %       
@@ -36,6 +60,8 @@ function [coeffs, perms] = bagging_mediation(X,Y,M,W,C,varargin)
 %                This is a structure with p field for each mediation path simulated.
 %
 % Written by T. Verstynen & A. Weinstein (2011). Modified by T. Verstynen (2013)
+% 
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.

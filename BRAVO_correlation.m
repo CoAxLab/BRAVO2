@@ -21,7 +21,7 @@ function BRAVO_correlation(nii_files,regressor,covariates,mask_file,varargin);
 %                    (voxels > 0).  Must be in same dimensions as input data.
 %       
 %       Optional Input:
-%           method = 'bootstrap' (Default) or 'permutation'
+%           method = 'bootstrap' or 'permutation' (Default)
 %
 %           out_file = Name string for output files (Default 'BRAVO_correlation.nii')
 %
@@ -36,7 +36,7 @@ function BRAVO_correlation(nii_files,regressor,covariates,mask_file,varargin);
 %           (Default 500 iterations).
 %
 %           norm_type = How to de-mean the data 'zscore'(Default) or
-%           'mean0'
+%           'mean0'. Only works on the Y factor
 %           
 %
 % OUTPUT:  Outputs 3 files with postfixes determined by 'out_file' ID.  The
@@ -60,12 +60,12 @@ function BRAVO_correlation(nii_files,regressor,covariates,mask_file,varargin);
 % 
 % Written by T. Verstynen (2011). Updated 2013
 %
+% Revised and released as BRAVO 2.0 by T. Verstynen (2014)
+%
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
 
-
-
-method = 'bootstrap';
+method = 'permutation';
 out_file  = 'BRAVO_correlation.nii';
 load_type = 'normal'; % Opts: 'normal','untouch'
 corr_type = 'pearsons'; % Opts: 'pearsons','spearmans'
@@ -217,81 +217,6 @@ switch load_type
 end;
     
 fprintf('\nDone\n')
-return;
-
-
-% -----------------------------------------
-% Start Subfunctions
-function out_nii = niiload(file,type);
-
-switch type
-    case 'normal'
-        out_nii = load_nii(file);
-    case 'untouch'
-        out_nii = load_untouch_nii(file);
-    otherwise
-        error('Unknown data loader type');
-end;
-return;
-
-    
-% -----------------------------------------
-function mat_data = getmat(nii_files,mask_dim,load_type);
- 
-if ischar(nii_files);
-    n_files = size(nii_files,1);
-elseif iscell(nii_files);
-    n_files = length(nii_files);
-else
-    error('Unknown data file list type.  Has to be an NxP character array or cell array.');
-end;
-
-% If it's a 4-D file, then just do that one;
-if n_files == 1;
-    
-    if ischar(nii_files); file = deblank(nii_files(1,:)); 
-    else
-        file = nii_files{1};
-    end;
-
-    nii = niiload(file,load_type);
-    mat_data = nii.img;
-else
-    % Otherwise loop through and load each file
-    % Get the data files setup
-    for f = 1:n_files
-
-        if ischar(nii_files);
-            file = deblank(nii_files(f,:));
-        else
-            file = nii_files{f};
-        end;
-
-        % Load the data
-        nii = niiload(file,load_type);
-
-        % Stop if the image has incorrect dimensions
-        if sum(size(nii.img)-mask_dim); error(sprintf('Image %d does not match mask image dimensions',f)); end;
-
-        % Store in the data matrix
-        mat_data(:,:,:,f) = nii.img;
-    end;
-end;
-
-return;
-
-
-function [betas, resid] = ols_regress(y,x);
-
-ind = find(~isnan(sum([y x],2)));
-
-% Calculates the OLS regression with multiple DVs
-betas = inv(x(ind,:)'*x(ind,:))*x(ind,:)'*y(ind,:); 
-y_hat = x(ind,:)*betas;
-
-resid = NaN(size(y));
-resid(ind,:) = y(ind,:)-y_hat;
-
 return;
 
 
