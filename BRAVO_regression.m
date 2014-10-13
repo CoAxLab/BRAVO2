@@ -4,7 +4,7 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
-% CORRELATION:
+% REGRESSION:
 % Performs a voxelwise regression analysis using bootstrap to estimate the 
 % the signficiance of a particular contrast vector (C) of interest.
 % 
