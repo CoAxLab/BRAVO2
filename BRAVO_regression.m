@@ -154,7 +154,7 @@ tOUT = NaN(mask_dim); ppOUT = NaN(mask_dim); sOUT = NaN(mask_dim);
 bcapOUT = NaN(mask_dim); 
 
 % Modify contrast to include the covariates and constant terms
-contrast = [contrast; zeros(size(covariates,2),1); 0];
+contrast = [contrast; zeros(size(covariates,2),1)];
 
 % Next run the loops
 fprintf('\t Regressing voxels \n')
@@ -180,7 +180,7 @@ for i = 1:length(good_vox)
     series = squeeze(zY(vx(i),vy(i),vz(i),:));
     
     % Evaluate the model
-    [con, c_p, c_p_bca, m_sim, std_sim] = run_model(dsX, series, contrast, parameters)
+    [con, c_p, c_p_bca, m_sim, std_sim] = run_model(dsX, series, contrast, parameters);
 
     % Store data in matrix form
     conOUT(vx(i),vy(i),vz(i)) = con;
@@ -269,4 +269,8 @@ switch params.method;
     otherwise
        error(sprintf('Unknown Analysis Method %s',method));
    end;
+
+m_sim = nanmean(sim); std_sim = nanstd(sim);
+
+return;
 

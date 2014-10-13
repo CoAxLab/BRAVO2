@@ -63,7 +63,7 @@ a2 = normcdf(a2);
 ci = [diag(prctile(boot,a1*100))'; diag(prctile(boot,a2*100))']; 
 
 % Then estimate the p-values
-pct = sum(boot < repmat(coefs,n,1))./B;
+pct = sum(boot(:) < repmat(coefs,n,1))./B;
 
 % Adjust for ceilings
 pct_lb = max(pct,1./B);

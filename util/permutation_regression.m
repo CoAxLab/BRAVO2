@@ -154,6 +154,6 @@ function [boot, boot_se] = simulate_iteration(x,y,contrast,qr)
     se(i) = sqrt( sigma.^2 ./ nansum(nx(:,i).^2) );
   end;
 
-  boot_se   = contrast * se;
+  boot_se   = contrast * se';
 
 
