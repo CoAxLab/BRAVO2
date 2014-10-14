@@ -69,7 +69,7 @@ RandStream('mt19937ar','Seed',sum(100*clock));
 % Define globals used in the subfunction
 global reg_type n_paths n_covs n_mediators n_moderators
 
-niter = 1000;
+n_iter = 1000;
 reg_type = 'ols_regress';
 
 % Get variable input parameters
@@ -118,7 +118,7 @@ coeffs = estimate_pathways(Y,X,M,W,C);
 coeff_list = {'a','b','c_prime','c','ab','d','adb','e','f'};
 
 % Now run the bootstrap
-for it = 1:niter
+for it = 1:n_iter
   
     % Permute all but the covariates
     nx = X(randperm(length(X)));

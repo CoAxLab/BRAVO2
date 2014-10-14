@@ -354,7 +354,7 @@ switch params.method;
 
     % Run the bootstrap
     [coeffs, sim] = permutation_mediation(IV,DV,MV,WV,CV,...
-        'n_iter', params.niter, 'reg_type', params.reg_type);
+		'n_iter', params.n_iter, 'reg_type', params.reg_type);
 
     for p = 1:params.n_path;
         for s = 1:length(prime_var)
