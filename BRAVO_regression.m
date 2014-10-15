@@ -30,7 +30,9 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %
 %           load_type = Which loader function ('normal','untouched').  Type
 %           'help load_nii' and 'help load_untouch_nii' for more info.
-%           Default is 'normal'.
+%           Default is 'untouch'. NOTE: Using the 'normal option does not
+%           always write correctly. Leaving as 'untouch' is highly
+%           recommended unless you really know what you are doing.
 %
 %           n_iter  = Number of permutations to run in the bootstrap
 %           (Default 500 iterations).
@@ -84,7 +86,7 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 
 method = 'permutation';
 out_file  = 'BRAVO_regression.nii';
-load_type = 'normal'; % Opts: 'normal','untouch'
+load_type = 'untouch'; % Opts: 'normal','untouch'
 n_iter    = 500;
 norm_type = 'zscore';
 con_type  = 't'; % Opts: 't', 'simple' -> just the betas
@@ -151,7 +153,7 @@ end;
 
 % Setup outputs
 tOUT = NaN(mask_dim); ppOUT = NaN(mask_dim); sOUT = NaN(mask_dim);
-bcapOUT = NaN(mask_dim); 
+bcapOUT = NaN(mask_dim); conOUT = NaN(mask_dim);
 
 % Modify contrast to include the covariates and constant terms
 contrast = [contrast; zeros(size(covariates,2),1)];
@@ -190,6 +192,7 @@ for i = 1:length(good_vox)
     
     % Store the output
     boot_par(:,i) = [m_sim std_sim];
+
 end;
 
 % Store the new nifti files
@@ -247,10 +250,10 @@ switch params.method;
             'reg_type',params,reg_type);
 
         % Calculate percentile significance
-        [c_ci, c_p] = ci_percentile(0,sim);
+        [c_ci, c_p] = ci_percentile(0,sim');
     
         % Calculate BCA significance
-        [c_ci_bca, c_p_bca] = ci_bca(0,sim);
+        [c_ci_bca, c_p_bca] = ci_bca(0,sim');
 
     case 'permutation'
         % Run the permutation
@@ -259,11 +262,11 @@ switch params.method;
             'reg_type',params.reg_type);
 
         % Calculate percentile significance
-        [c_ci, c_p] = ci_percentile(t,sim);
+        [c_ci, c_p] = ci_percentile(t,sim');
         c_p = 1-c_p;
 
         % Calculate BCA significance
-        [c_ci_bca, c_p_bca] = ci_bca(t,sim);
+        [c_ci_bca, c_p_bca] = ci_bca(t,sim');
         c_p_bca = 1-c_p_bca;
     
     otherwise

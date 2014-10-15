@@ -57,7 +57,9 @@ function BRAVO_mediation(X,Y,M,covariates,mask_file,varargin);
 %
 %           load_type = Which loader function ('normal','untouched').  Type
 %           'help load_nii' and 'help load_untouch_nii' for more info.
-%           Default is 'normal'.
+%           Default is 'untouch'. NOTE: Using the 'normal option does not
+%           always write correctly. Leaving as 'untouch' is highly
+%           recommended unless you really know what you are doing.
 %
 %           n_iter  = Number of permutations to run in the bootstrap
 %           (Default 500 iterations).
@@ -120,7 +122,7 @@ function BRAVO_mediation(X,Y,M,covariates,mask_file,varargin);
 
 method = 'permutation';
 out_file  = 'BRAVO_multimediation.nii';
-load_type = 'normal'; % Opts: 'normal','untouch'
+load_type = 'untouch'; % Opts: 'normal','untouch'
 n_iter    = 500;
 norm_type = 'zscore';
 reg_type  = 'ols_regress'; 
@@ -203,6 +205,45 @@ end;
 % Store array
 store_array = {'ab','a','b'};
 secondary_array = {'d','adb'};
+
+
+% Setup the full output objects first
+for p = 1:parameters.n_path
+    for s = 1:length(store_array);
+        store_str = store_array{s};
+        eval(sprintf('Path%d_%s_perc_p = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+        eval(sprintf('Path%d_%s_bca_p = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+        eval(sprintf('Path%d_%s = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+        eval(sprintf('Path%d_%s_z = NaN([mask_dim %d]);',p,upper(store_str), parameters.n_med(p)));
+    end
+
+    switch p
+    case 1
+        ext_array = {'c_prime'};
+    case 2
+        ext_array = {'d','adb'};
+    end
+    for e = 1:length(ext_array);
+        store_str = ext_array{e};
+
+        eval(sprintf('%s_perc_p = NaN([mask_dim %d]);',upper(store_str),parameters.n_med(p)));
+        eval(sprintf('%s_bca_p = NaN([mask_dim %d]);',upper(store_str),parameters.n_med(p)));
+        eval(sprintf('%s = NaN([mask_dim %d]);',upper(store_str),parameters.n_med(p)));
+        eval(sprintf('%s_z= NaN([mask_dim %d]);',upper(store_str),parameters.n_med(p)));
+    end
+
+    if has_mod
+        mod_array = {'f','e'};
+        for m = 1:length(mod_array);
+            store_str = mod_array{m};
+            eval(sprintf('Path%d_%s_perc_p = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+            eval(sprintf('Path%d_%s_bca_p = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+            eval(sprintf('Path%d_%s = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+            eval(sprintf('Path%d_%s_z = NaN([mask_dim %d]);',p,upper(store_str),parameters.n_med(p)));
+        end;
+    end;
+end;
+
 
 % Next run the loops
 fprintf('\t Mediating voxels \n')

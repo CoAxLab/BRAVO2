@@ -27,7 +27,9 @@ function BRAVO_correlation(nii_files,regressor,covariates,mask_file,varargin);
 %
 %           load_type = Which loader function ('normal','untouched').  Type
 %           'help load_nii' and 'help load_untouch_nii' for more info.
-%           Default is 'normal'.
+%           Default is 'untouch'. NOTE: Using the 'normal option does not
+%           always write correctly. Leaving as 'untouch' is highly
+%           recommended unless you really know what you are doing.
 %
 %           corr_type = Which type of correlation to use.  Parametric
 %           ('pearsons' Default) or nonparametric ('spearmans')
@@ -67,7 +69,7 @@ function BRAVO_correlation(nii_files,regressor,covariates,mask_file,varargin);
 
 method = 'permutation';
 out_file  = 'BRAVO_correlation.nii';
-load_type = 'normal'; % Opts: 'normal','untouch'
+load_type = 'untouch'; % Opts: 'normal','untouch'
 corr_type = 'pearsons'; % Opts: 'pearsons','spearmans'
 n_iter    = 500;
 ratio  = 2/3; % With bootstrap method only
