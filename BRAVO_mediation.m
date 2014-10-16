@@ -88,16 +88,18 @@ function BRAVO_mediation(X,Y,M,covariates,mask_file,varargin);
 %     1) The map of the statistical coefficients from the model specified. See
 %        description above for list of possible coefficients
 %
-%     2) 'bca_p', 'bca_inv_p' = P-value of bootstrap using a bias corrected
-%        and accelerated adjustment. These show the probability that the
+%     2) 'bca_p' = P-value of bootstrap using a bias corrected
+%        and accelerated adjustment. This shows the probability that the
 %        null mean is larger than the observed effect size (i.e., strong positive
 %        effect sizes will have smaller p-values and strong negative
-%        effects will have larger p-values).  For negative effects use the
-%        1-p file ('inv_p') file to assess significance.
+%        effects will have larger p-values).  
 %
-%     3) 'perc_p', 'perc_inv_p' = P-value of bootstrap using the standard
-%        percentile method.  As with teh BCA, the second file is the 1-p values
-%        should be used when estimating significance on negative effects.
+%     3) 'perc_p', = P-value of bootstrap using the standard
+%        percentile method.  NOTE: If you need to use a positive thresholding
+%        viewer like MRICroN, use the p_inverter.m function to flip the p-values
+%        and threshold your visualization at 1-alpha. For example if you want to
+%        find all voxels with p < 0.01, you'd threshold your 'inv_' file, that is
+%        output from p_inverter, to 0.99.
 %
 %     4) '_z' = Z-score of observed regression coefficient against the
 %        bootstrap distribution (i.e., [coeff - mean(boot)]/std(boot)). For

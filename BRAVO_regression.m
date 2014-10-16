@@ -60,12 +60,12 @@ function BRAVO_regression(nii_files,regressor,covariates,contrast,mask_file,vara
 %       and accelerated adjustment. These show the probability that the
 %       null mean is larger than the observed effect size (i.e., strong positive
 %       effect sizes will have smaller p-values and strong negative
-%       effects will have larger p-values).  For negative effects use the
-%       1-p file ('inv_p') file to assess significance.
+%       effects will have larger p-values).  For visualizing in MRICro or similar
+%       positive thresholding viewers, use the inv_p file.
 %
 %       'perc_p', 'perc_inv_p' = P-value of bootstrap using the standard
 %       percentile method.  As with teh BCA, the second file is the 1-p values
-%       should be used when estimating significance on negative effects
+%       should be used for visualization when thresholding to a particular p-value
 %
 %       'std'     = Standard deviation of the bootstrap.
 %
