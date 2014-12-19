@@ -67,7 +67,7 @@ function [coeffs, perms] = bootstrap_mediation(X,Y,M,W,C,varargin)
 RandStream('mt19937ar','Seed',sum(100*clock));
 
 % Define globals used in the subfunction
-global reg_type n_paths n_covs n_mediators n_moderators
+global reg_type n_paths n_covs n_mediators n_moderators 
 
 n_iter = 1000;
 reg_type = 'ols_regress';
@@ -108,6 +108,7 @@ n_mediators  = n_mediators(2:2:end);
 
 n_moderators = cell2mat(cellfun(@size,W,'UniformOutput',0));
 n_moderators = n_moderators(2:2:end);
+
 
 warning off;
 

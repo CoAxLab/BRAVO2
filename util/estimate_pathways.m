@@ -45,7 +45,7 @@ for p = 1:n_paths
     eval(sprintf('[primes_coef,r] = %s(Y,design);',reg_type));
 
     % Store the coefficients 
-    coeffs(p).a = acoef(2:n_mediators(p)+1);
+    coeffs(p).a = acoef(2,:);
     coeffs(p).c_prime = primes_coef(2);
     coeffs(p).b = primes_coef(3:n_mediators(p)+2,:)';
     coeffs(p).ab = coeffs(p).a .* coeffs(p).b;
@@ -53,7 +53,6 @@ for p = 1:n_paths
     % If you're running a serial model store the interaction term 
     % between mediators
     if p > 1;
-
     	% Replace the old b in the earlier path with the new one 
     	back_b = primes_coef(n_mediators(p)+3:end-n_covs,:);
         coeffs(p-1).b = back_b;
@@ -70,11 +69,10 @@ for p = 1:n_paths
 
 
     % Temporary moderator array
-    mods = acoef(n_mediators(p)+1+p:end-n_covs);
-
+    mods = acoef(n_moderators(p)+1+p:end-n_covs,:);
     if ~isempty(mods)
-        coeffs(p).e = mods(1:length(mods)/2);
-        coeffs(p).f = mods(length(mods)/2+1:end);
+        coeffs(p).e = mods(1,:);
+        coeffs(p).f = mods(2,:);
     else
         coeffs(p).e = NaN;
         coeffs(p).f = NaN;
@@ -85,4 +83,6 @@ for p = 1:n_paths
     clear mods design;
 
 end;
+
+
 
