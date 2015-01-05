@@ -404,7 +404,7 @@ switch params.method;
         for s = 1:length(prime_var)
             eval(sprintf('[~,hyp_tests(p).%s_p_perc] = ci_percentile(coeffs.%s,sim(p).%s);',prime_var{s},prime_var{s},prime_var{s}));
             eval(sprintf('[~,hyp_tests(p).%s_p_bca] = ci_bca(coeffs.%s,sim(p).%s);',prime_var{s},prime_var{s},prime_var{s}));
-            eval(sprintf('hyp_tests(p).%s_z = [nanmean(sim.%s) - nanmean(sim.%s)] ./ nanstd(sim.%s);',prime_var{s},prime_var{s},prime_var{s},prime_var{s}));
+            eval(sprintf('hyp_tests(p).%s_z = [nanmean(sim.%s) - nanstd(sim.%s)] ./ nanstd(sim.%s);',prime_var{s},prime_var{s},prime_var{s},prime_var{s}));
         end;
 
         if p == 2;
