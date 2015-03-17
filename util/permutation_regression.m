@@ -51,6 +51,7 @@ n_iter = 1000;
 stat_type = 'simple';
 reg_type = 'ols_regress';
 n_threads = 0; % Note multithreading is not fully supported yet. Don't turn this on.
+is_par = 0;
 
 % Get variable input parameters
 for v=1:2:length(varargin),
