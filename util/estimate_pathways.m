@@ -69,7 +69,7 @@ for p = 1:n_paths
 
 
     % Temporary moderator array
-    mods = acoef(n_moderators(p)+1+p:end-n_covs,:);
+    mods = acoef(n_moderators(p)+1+n_mediators(p)+p:end-n_covs,:);
     if ~isempty(mods)
         coeffs(p).e = mods(1,:);
         coeffs(p).f = mods(2,:);

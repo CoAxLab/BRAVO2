@@ -1,6 +1,6 @@
 function [coeffs, perms] = bootstrap_mediation(X,Y,M,W,C,varargin)
 
-%f unction [coeffs perms] = bootstrap_mediation(X,Y,M,C,OPTS)
+%f unction [coeffs perms] = bootstrap_mediation(X,Y,M,W,C,OPTS)
 %
 % BRAVO: Bootstrap Regression Analysis of Voxelwise Observations
 %
