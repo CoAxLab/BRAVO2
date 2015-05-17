@@ -230,15 +230,19 @@ end;
 % Now save everything
 for s = 1:length(store_array);
     for p = 1:length(param_array);
-        ofname = sprintf('%s_%s_%s%s',store_array{s},param_array{p},fn, fe);
+        ofname = fullfile(fp,sprintf('%s_%s_%s%s',store_array{s},param_array{p},fn, fe));
         eval(sprintf('%s_%s_nii = mask;',store_array{s},param_array{p}));
-        eval(sprintf('%s_%s_nii = %s_%s;',store_array{s},param_array{p},store_array{s},param_array{p}));
+        eval(sprintf('%s_%s_nii.img = %s_%s;',store_array{s},param_array{p},store_array{s},param_array{p}));
+
+        eval(sprintf('o_nii = %s_%s_nii;',store_array{s},param_array{p}));
 
         switch load_type
         case 'normal'
-            eval(sprintf('save_nii(%s_%s_nii,fullfile(fp,%s));',store_array{s},param_array{p},ofname));
+            %eval(sprintf('save_nii(%s_%s_nii,%s);',store_array{s},param_array{p},ofname));
+            save_nii(o_nii,ofname);
         case 'untouch'
-                        eval(sprintf('save_untouch_nii(%s_%s_nii,fullfile(fp,%s));',store_array{s},param_array{p},ofname));
+            %eval(sprintf('save_untouch_nii(%s_%s_nii,%s);',store_array{s},param_array{p},ofname));
+            save_untouch_nii(o_nii, ofname);
         otherwise
             error('Unknown saving option');
         end;
@@ -246,8 +250,13 @@ for s = 1:length(store_array);
 end;
 
 pID_meTime = FDR(meTime_p(good_vox),0.05);
+if isempty(pID_meTime); pID_meTime = 0; end;
+
 pID_meGroup = FDR(meGroup_p(good_vox),0.05);
+if isempty(pID_meGroup); pID_meGroup = 0; end;
+
 pID_intx = FDR(intx_p(good_vox),0.05);
+if isempty(pID_intx); pID_intx = 0; end;
 
 fprintf('\n \n')
 fprintf(sprintf('FDR: Main Effect Time = %2.4f \n',pID_meTime));
