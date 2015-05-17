@@ -191,8 +191,7 @@ for i = 1:length(good_vox)
     % Update the progress if necessary
     if old_vox_perc < vox_perc;
         fprintf(sprintf('  %d',vox_perc));
-        old_vox_perc = vox_perc;
-        timestamp = toc-T0;
+        old_vox_perc = vox_perc;        
     end;
     
     for t = 1:nT;
@@ -245,6 +244,15 @@ for s = 1:length(store_array);
         end;
     end;
 end;
+
+pID_meTime = FDR(meTime_p(good_vox),0.05);
+pID_meGroup = FDR(meGroup_p(good_vox),0.05);
+pID_intx = FDR(intx_p(good_vox),0.05);
+
+fprintf('\n \n')
+fprintf(sprintf('FDR: Main Effect Time = %2.4f \n',pID_meTime));
+fprintf(sprintf('FDR: Main Effect Group = %2.4f \n',pID_meGroup));
+fprintf(sprintf('FDR: Group x Time = %2.4f \n',pID_intx));
 
 fprintf('\nDone\n')
 
