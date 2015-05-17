@@ -1,4 +1,4 @@
-function [p true_stat stat_ci boot] = bootstrap_regression(x,y,contrast,varargin);
+function [p, true_stat, stat_ci, boot, betas] = bootstrap_regression(x,y,contrast,varargin);
 
 % function [p true_stat CI sim] = bootstrap_regression(X,Y,C,OPTS);
 %
@@ -68,7 +68,7 @@ se = se_calc(r,x)';
 
 switch stat_type
   case 't';
-    true_stat = [0 contrast] * [betas ./ se];
+    true_stat = [contrast] * [betas(2:end) ./ se];
   case 'simple'
     true_stat = [0 contrast] * betas;
   otherwise
