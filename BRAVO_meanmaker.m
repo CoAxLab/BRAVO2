@@ -39,23 +39,28 @@ else
     error('Unknown file pointers');
 end;
 
-if size(mask.img,4) > 1; error('Can only accept a list of nifti image files for now'); end;
+if size(mask.img,4) > 1;
+    mask.img = nanmean(mask.img,4);
+    mask.hdr.dime.dim(1) = 3;
+    mask.hdr.dime.dim(5) = 1;
+    mask.hdr.dime.pixdim(5) = 0;
+else
+    for f = 1:length(nii_files);
+        if ischar(nii_files);
+            file = deblank(nii_files(f,:));
+        else
+            file = nii_files{f};
+        end;
+         
+        % Load the data
+        nii = niiload(file,load_type);
 
-for f = 1:length(nii_files);
-    if ischar(nii_files);
-        file = deblank(nii_files(f,:));
-    else
-        file = nii_files{f};
-    end;
-     
-    % Load the data
-    nii = niiload(file,load_type);
-
-    % Store in the data matrix
-    if f == 1;
-        mask.img = nii.img;
-    else
-        mask.img = [mask.img + nii.img]./2;
+        % Store in the data matrix
+        if f == 1;
+            mask.img = nii.img;
+        else
+            mask.img = [mask.img + nii.img]./2;
+        end;
     end;
 end;
 

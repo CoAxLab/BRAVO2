@@ -29,6 +29,13 @@ function [ci, p] = ci_bca(coefs, boot, alpha);
 
 n_coef = length(coefs);
 
+% If the coefficient is a NaN, then simply return NaN values
+if isnan(coefs);
+    ci = [NaN NaN];
+    p = NaN;
+    return;
+end;
+
 if ~coefs & n_coef == 1 & size(boot,2)>1
     coefs = repmat(coefs,1,size(boot,2));
 end;

@@ -22,9 +22,10 @@ function  mask = BRAVO_maskmaker(nii_file, threshold, varargin);
 %           'BRAVO_mask.nii'.
 %
 %           thresh_type = How to do the thresholding. Greater than
-%           threshold value ('gt', default) or less than ('lt').
+%           threshold value ('gt', default), less than ('lt'), or
+%           'ab' for absolute value greater than zero.
 %
-% Written by T. Verstnen (2011). Updated 2013.
+% Written by T. Verstnen (2011). Updated 2013, 2016.
 %
 % All code is released under BSD 2-clause license (FreeBSD 9.0).  See
 % http://opensource.org/licenses/BSD-2-Clause for more information.
@@ -32,7 +33,7 @@ function  mask = BRAVO_maskmaker(nii_file, threshold, varargin);
 
 load_type = 'normal'; % Opts: 'normal','untouch'
 mask_name = 'BRAVO_mask.nii';
-thresh_type = 'gt'; % Opts: 'gt'(greater than), 'lt' (less than)
+thresh_type = 'gt'; % Opts: 'gt'(greater than), 'lt' (less than), 'ab' (greater than absolute value)
 
 % Get the variable input parameters
 for v=1:2:length(varargin),
@@ -52,6 +53,8 @@ switch thresh_type
         ind = find(nii.img(:) > threshold);
     case 'lt'
         ind = find(nii.img(:) < threshold);
+    case 'ab'
+        ind = find(abs(nii.img(:)) > threshold);
     otherwise
         error('Unknown thresholding option')
 end;
