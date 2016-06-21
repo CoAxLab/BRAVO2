@@ -1,5 +1,7 @@
 function [betas, resid] = qr_regress(y,x);
 
+% function [betas, resid] = qr_regress(y,x);
+
 % Insert intercept
 x = x2fx(x);
 
