@@ -22,9 +22,12 @@ Data=[];
 %eval(['global ' Header]);
 Head=Header;
 while length(Head)>0
-    [r,Head]=strtok(Head);
+    [r,Head]=strtok(Head,char(9));
     if (~isempty(r))
-        H={H{1:end} r};
+        if ~isempty(isspace(r));
+            r = r(~isspace(r));
+        end;
+        H={H{1:end} deblank(r)};
     end;
 end;
 %Header=H;
